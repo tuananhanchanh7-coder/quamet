@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+
+.ai-highlight {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: 500;
+    border: 1px dashed #ef4444;
+}
+
+@media print {
+    .no-print {
+        display: none;
+    }
+}

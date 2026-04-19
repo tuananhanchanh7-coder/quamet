@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "UserPublic": {
+      "title": "User Profile",
+      "description": "Public user information and approval status",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["email", "schoolName", "teacherName", "status", "role", "createdAt", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "User Private Data",
+      "description": "Private user information including API keys",
+      "type": "object",
+      "properties": {
+        "apiKey": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["apiKey"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublic" },
+      "description": "User profile and approval status"
+    },
+    "/users/{userId}/private/info": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "User private data like API Keys"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrapper() {
+      return isSignedIn() && (request.auth.token.email == "0015412301@admin.com" || request.auth.token.email == "truongtuananh.vinhlong2@ueh.edu.vn");
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (isBootstrapper() || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'displayName', 'schoolName', 'teacherName', 'status', 'role', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 8 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.displayName is string && data.displayName.size() <= 256 &&
+             data.schoolName is string && data.schoolName.size() <= 256 &&
+             data.teacherName is string && data.teacherName.size() <= 256 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.role in ['user', 'admin'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if isBootstrapper();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      // No blanket read. List enforces nothing natively unless we constrain it.
+      // Admins are allowed to list all users, but we can't secure `list` simply by role check without it being a "blanket read" for Admins. Wait, Admin is allowed to blanket read.
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn() && isValidId(userId) &&
+                       isValidUser(incoming()) &&
+                       incoming().createdAt == request.time &&
+                       incoming().updatedAt == request.time &&
+                       (
+                         (isOwner(userId) && (incoming().status == 'pending' || incoming().status == 'approved') && incoming().role == 'user') ||
+                         (isAdmin() && isOwner(userId) && incoming().role == 'admin' && incoming().status == 'approved') ||
+                         isAdmin()
+                       );
+      
+      allow update: if isSignedIn() && isValidId(userId) &&
+                       isValidUser(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time &&
+                       (
+                         isAdmin() ||
+                         (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'displayName']))
+                       );
+      
+      allow delete: if isAdmin();
+
+      match /private/info {
+        allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+        
+        allow create: if isSignedIn() && isValidId(userId) && isOwner(userId) &&
+                         incoming().keys().hasAll(['apiKey', 'updatedAt']) &&
+                         incoming().keys().size() == 2 &&
+                         incoming().apiKey is string && incoming().apiKey.size() <= 1024 &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt == request.time;
+
+        allow update: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin()) &&
+                         incoming().keys().hasAll(['apiKey', 'updatedAt']) &&
+                         incoming().keys().size() == 2 &&
+                         incoming().apiKey is string && incoming().apiKey.size() <= 1024 &&
+                         incoming().updatedAt is timestamp &&
+                         incoming().updatedAt == request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['apiKey', 'updatedAt']);
+        
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

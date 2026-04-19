@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI EduPlanner - Nâng cấp Kế hoạch bài dạy</title>
+    <script>
+      // Fetch Guard: Prevents 'TypeError: Cannot set property fetch of #<Window> which has only a getter'
+      // This happens when polyfills (like formdata-polyfill) try to overwrite native fetch in environments where it is read-only.
+      (function() {
+        var _fetch = window.fetch;
+        if (_fetch) {
+          try {
+            Object.defineProperty(window, 'fetch', {
+              get: function() { return _fetch; },
+              set: function() { console.warn('Blocked attempt to override native fetch.'); },
+              configurable: true,
+              enumerable: true
+            });
+          } catch (e) {
+            // If it's not configurable, we can't do much, but at least we tried.
+          }
+        }
+      })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .ai-highlight {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 500;
+            border: 1px dashed #ef4444;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+<script type="module" src="/src/index.tsx"></script>
+</body>
+</html>
